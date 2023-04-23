@@ -22,7 +22,8 @@
 // Modifications for use with Baffa-1 and Baffa-2 Projects
 // Copyright (C) 2021 Augusto Baffa
 //
-// updated for keep 9600 working on Baffa-2 Romwbw 4mhz aug,2nd 2022
+// . updated for keep 9600 working on Baffa-2 RomWBW 4mhz aug, 2nd 2022
+// . updated for Baffa-2+ dec, 4th 2022
 // -----------------------------------------------------------------------------
 
 #include <ESP8266WiFi.h>
@@ -33,6 +34,12 @@
 
 //how many clients should be able to telnet to this ESP8266
 #define MAX_SRV_CLIENTS 3
+
+#define HOSTNAME "baffa2p"
+#define BOARDNAME "Baffa-2+"
+
+//#define HOSTNAME "baffax" //"baffa2p"
+//#define BOARDNAME "Baffa-X" //"Baffa-2+"
 
 WiFiServer server(23);
 WiFiClient serverClients[MAX_SRV_CLIENTS], modemClient;
@@ -67,17 +74,20 @@ enum
     E_CONNECT,
     E_RING,
     E_NOCARRIER,
-    E_ERROR,
-    E_CONNECT1200,
+    E_ERROR,    
     E_NODIALTONE,
     E_BUSY,
     E_NOANSWER,
     E_CONNECT600,
+	E_CONNECT1200,
     E_CONNECT2400,
     E_CONNECT4800,
     E_CONNECT9600,
     E_CONNECT14400,
-    E_CONNECT19200
+    E_CONNECT19200,
+	E_CONNECT38400,
+	E_CONNECT57600,
+	E_CONNECT115200
   };
 
 
@@ -195,10 +205,14 @@ void handleRoot()
 
   s = ("<html>\n"
        "<head>\n"
-       "<title>Baffa-2 ESP8266 Module Telnet-to-Serial Bridge</title>\n"
+       "<title>"
+       BOARDNAME
+       " Wifi Module Telnet-to-Serial Bridge</title>\n"
        "</head>\n"
        "<body>\n"
-       "<h1>Baffa-2 ESP8266 Module Telnet-to-Serial Bridge</h1>\n");
+       "<h1>"
+       BOARDNAME
+       " Wifi Telnet-to-Serial Bridge</h1>\n");
 
   s += "<h2>Baud rate</h1>\n<ul>\n";
   for(i=0; baud[i]; i++)
@@ -353,10 +367,14 @@ void handleSet()
         String s;
         s = ("<html>\n"
              "<head>\n"
-             "<title>Baffa-2 ESP8266 Module Telnet-to-Serial Bridge</title>\n"
+             "<title>"
+             BOARDNAME
+             " Wifi Module Telnet-to-Serial Bridge</title>\n"
              "</head>\n"
              "<body>\n"
-             "<h1>Baffa-2 ESP8266 Module Telnet-to-Serial Bridge</h1>\n");
+             "<h1>"
+             BOARDNAME 
+             " Wifi Module Telnet-to-Serial Bridge</h1>\n");
         s += "<p id='demo'></p>\n\n";
 
         s += "<script>\n";
@@ -385,7 +403,9 @@ void handleSet()
         s += "  // If the count down is over, write some text \n";
         s += "  if (distance < 0) {\n";
         s += "    clearInterval(x);\n";
-        s += "    document.getElementById('demo').innerHTML = 'You may cycle power on your Baffa-2 and reconnect.';\n";
+        s += "    document.getElementById('demo').innerHTML = 'You may cycle power on your ";
+        s += BOARDNAME;
+        s += " and reconnect.';\n";
         s += "  }\n";
         s += "}, 1000);\n";
         s += "</script>\n";
@@ -475,7 +495,7 @@ void setup()
   wifi_set_sleep_type(NONE_SLEEP_T);
   
   WiFiManager wifiManager;
-  wifiManager.autoConnect("baffa2");
+  wifiManager.autoConnect(HOSTNAME);
 
   // if we get here then we're connected to WiFi
   digitalWrite(LED_PIN, HIGH); 
@@ -506,7 +526,7 @@ void setup()
     Serial.println('\n');
   }
 
-  MDNS.begin("baffa2");
+  MDNS.begin(HOSTNAME);
   webserver.on("/", handleRoot);
   webserver.on("/set", handleSet);
   webserver.onNotFound(handleNotFound);
@@ -602,15 +622,19 @@ void printModemResult(byte code)
             case E_RING          : Serial.print("RING");           break;
             case E_NOCARRIER     : Serial.print("NO CARRIER");     break;
             case E_ERROR         : Serial.print("ERROR");          break;
-            case E_CONNECT1200   : Serial.print("CONNECT 1200");   break;
-            case E_NODIALTONE    : Serial.print("NO DIALTONE");    break;
+			case E_NODIALTONE    : Serial.print("NO DIALTONE");    break;
             case E_BUSY          : Serial.print("BUSY");           break;
             case E_NOANSWER      : Serial.print("NO ANSWER");      break;
             case E_CONNECT600    : Serial.print("CONNECT 600");    break;
+			case E_CONNECT1200   : Serial.print("CONNECT 1200");   break;
             case E_CONNECT2400   : Serial.print("CONNECT 2400");   break;
             case E_CONNECT4800   : Serial.print("CONNECT 4800");   break;
             case E_CONNECT9600   : Serial.print("CONNECT 9600");   break;
             case E_CONNECT14400  : Serial.print("CONNECT 14400");  break;
+			case E_CONNECT19200  : Serial.print("CONNECT 19200");  break;
+			case E_CONNECT38400  : Serial.print("CONNECT 38400");  break;
+			case E_CONNECT57600  : Serial.print("CONNECT 57600");  break;
+			case E_CONNECT115200 : Serial.print("CONNECT 115200");  break;
             default:
               {
                 char buf[20];
@@ -998,12 +1022,21 @@ void handleModemCommand()
                             {
                               switch( modemReg[REG_CURLINESPEED] )
                                 {
+								/*
                                 case 3: status = E_CONNECT; break;
                                 case 4: status = E_CONNECT600; break;
                                 case 5: status = E_CONNECT1200; break;
                                 case 6: status = E_CONNECT2400; break;
                                 case 7: status = E_CONNECT4800; break;
                                 case 9: status = E_CONNECT9600; break;
+								*/
+								case 1: status = E_CONNECT4800; break;
+                                case 2: status = E_CONNECT9600; break;
+                                case 3: status = E_CONNECT14400; break;
+                                case 4: status = E_CONNECT19200; break;
+                                case 5: status = E_CONNECT38400; break;
+                                case 6: status = E_CONNECT57600; break;
+								case 7: status = E_CONNECT115200; break;
                                 default: status = E_CONNECT; break;
                                 }
 
