@@ -1,6 +1,9 @@
 # Baffa-2 WifiModem 
 
+Wifi Modem for Baffa-2 adjusted from David Hansel's WiFi Modem and Telnet Server. This repository is based on Chris Davis' version (Altair-Duino).
+I used this code to get my Altair-duinos connected via WiFi Modem and later in my own projects.
 
+Original repos is at [(https://github.com/dhansel/WifiModem)](https://github.com/davischris/WifiModem).
 
 
 # WifiModem
